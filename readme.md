@@ -1,3 +1,22 @@
+# Phoebus Challenge
+This repository contains a pipeline that uses Terraform, Ansible and Docker to Build and Deploy its code to a free tier EC2 instance on AWS. The terraform state is saved on a S3 bucket.
+
+Some configuration is needed
+
+1. Create a IAM User with EC2 and S3 credentials
+2. Create a EC2 Key Pair
+3. Create a S3 bucket
+4. Store the following variables in your repository 
+    - "IAM `$AWS_ACCESS_KEY_ID` `$AWS_SECRET_ACCESS_KEY`" 
+    - "EC2 `$PRIVATE_KEY`" 
+    - "GITLAB `$REGISTRATION_TOKEN`" 
+    - "DOCKER `$REGISTRY_USERNAME` `$REGISTRY_PASSWORD`"
+5. Change `versions.tf` S3 bucket name
+
+Now, when new code is committed, the pipeline will trigger, create the image, upload to docker hub and deploy to your EC2 instance on port 8080.
+
+If you want to destroy the infrastructure manually run the pipeline with the variable DESTROY="true"
+
 # Spring PetClinic Sample Application [![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml)
 
 ## Understanding the Spring Petclinic application with a few diagrams
