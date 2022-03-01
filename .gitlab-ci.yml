@@ -1,0 +1,73 @@
+stages:
+  - createinfra
+  - setupserver
+  - buildcontainer
+  - deploycontainer
+  - destroyinfra
+
+cache:
+  paths:
+    - server_ip
+
+createifra:
+  stage: createinfra
+  image:
+    name: hashicorp/terraform
+    entrypoint: [""]
+  script:
+    - terraform init
+    - terraform apply -auto-approve
+    - terraform output server_ip > server_ip
+  except:
+    variables:
+      - $DESTROY == "true"
+
+setupserver:
+  stage: setupserver
+  image: alpine
+  script:
+    - apk add ansible openssh-client
+    - eval $(ssh-agent -s)
+    - chmod 400 $PRIVATE_KEY
+    - ssh-add $PRIVATE_KEY    
+    - sleep 60 && ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i server_ip -u ubuntu playbook.yaml --extra-vars "REGISTRATION_TOKEN=$REGISTRATION_TOKEN"
+  except:
+    variables:
+      - $DESTROY == "true"
+
+buildcontainer:
+  stage: buildcontainer
+  tags:
+    - ec2-runner
+  before_script:
+    - docker info
+    - docker login --username $REGISTRY_USERNAME --password $REGISTRY_PASSWORD
+  script:
+    - docker build -t seltonlucas/spring-petclinic:$CI_PIPELINE_ID .
+    - docker push seltonlucas/spring-petclinic:$CI_PIPELINE_ID
+  except:
+    variables:
+      - $DESTROY == "true"
+
+deploycontainer:
+  stage: deploycontainer
+  tags:
+    - ec2-runner
+  script:
+    - docker container rm -f spring-petclinic || true
+    - docker container run -d --rm --publish 8080:8080 --name spring-petclinic seltonlucas/spring-petclinic:$CI_PIPELINE_ID
+  except:
+    variables:
+      - $DESTROY == "true"
+
+destroyinfra:
+  stage: destroyinfra
+  image:
+    name: hashicorp/terraform
+    entrypoint: [""]
+  script:
+    - terraform init
+    - terraform destroy -auto-approve
+  only:
+    variables:
+      - $DESTROY == "true"
