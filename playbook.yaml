@@ -1,0 +1,55 @@
+- hosts: all
+  become: true
+  become_user: ubuntu
+  gather_facts: false
+
+  tasks:
+    - name: "Update apt-get repository"
+      become_user: root
+      raw: apt-get update
+
+    - name: Install Docker
+      become_user: root
+      shell: |
+        curl -fsSL https://get.docker.com/ | sh
+
+    - name: "Restart Docker"
+      become_user: root
+      systemd:
+          name: docker
+          enabled: yes
+          state: restarted
+          daemon_reload: yes
+
+    - name: Install Runner
+      become_user: root
+      shell: |
+        curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+        chmod +x /usr/local/bin/gitlab-runner
+        useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
+        gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+        gitlab-runner start
+      args:
+        creates: /usr/bin/gitlab-runner
+    
+    - name: Register Runner
+      become_user: root
+      shell: |
+        gitlab-runner register \
+        --non-interactive \
+        --url https://gitlab.com/ \
+        --registration-token {{REGISTRATION_TOKEN}} \
+        --tag-list "ec2-runner" \
+        --run-untagged="false" \
+        --executor "shell" \
+  
+    - name: Add gitlab-runner user to docker group
+      become_user: root
+      shell: |
+        usermod -aG docker gitlab-runner
+
+    - name: Removing .bash_logout
+      become_user: root
+      file:
+        path: /home/gitlab-runner/.bash_logout
+        state: absent
