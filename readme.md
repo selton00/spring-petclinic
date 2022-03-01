@@ -3,7 +3,7 @@ This repository contains a pipeline that uses Terraform, Ansible and Docker to B
 
 Some configuration is needed
 
-1. Create a IAM User with EC2 and S3 credentials
+1. Create a IAM User with EC2 and S3 permissions
 2. Create a EC2 Key Pair
 3. Create a S3 bucket
 4. Store the following variables in your repository 
@@ -15,7 +15,7 @@ Some configuration is needed
 
 Now, when new code is committed, the pipeline will trigger, create the image, upload to docker hub and deploy to your EC2 instance on port 8080.
 
-If you want to destroy the infrastructure manually run the pipeline with the variable DESTROY="true"
+If you want to destroy the infrastructure, manually run the pipeline with the variable DESTROY="true"
 
 # Spring PetClinic Sample Application [![Build Status](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml/badge.svg)](https://github.com/spring-projects/spring-petclinic/actions/workflows/maven-build.yml)
 
